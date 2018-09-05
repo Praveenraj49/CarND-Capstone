@@ -16,14 +16,15 @@ class Controller(object):
                  decel_limit ,accel_limit, throttle_limit, tor_limit ):
         # TODO: Implement
         self.yaw_controller  = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel,max_steer_angle)
-        self.tau = 0.2
-        self.ts = 0.2
+        self.tau = 0.5
+        self.ts = 0.02
 
         self.vel_lpf = LowPassFilter(self.tau, self.ts)
-        self.kp = 0.001
-        self.ki = 0.0
+        self.kp = 0.2
+        self.ki = 0.1
         self.kd  = 0.01
-
+        self.min  = 0.0
+        self.max = 0.2
         self.vehicle_mass = vehicle_mass + GAS_DENSITY*fuel_capacity
         self.wheel_base = wheel_base
         self.wheel_radius = wheel_radius
@@ -32,7 +33,7 @@ class Controller(object):
         self.accel_limit = accel_limit
         self.decel_limit  = decel_limit
 
-        self.throttle_controller  = PID(self.kp , self.ki, self.kd , -self.throttle_limit , self.throttle_limit)
+        self.throttle_controller  = PID(self.kp , self.ki, self.kd , self.min , self.max)
 
         self.last_time  = rospy.get_time()
 
@@ -54,14 +55,14 @@ class Controller(object):
         self.last_time = current_time
 
         throttle  = self.throttle_controller.step(vel_error , sample_time)
-        brake = 0
+        brake = 0.0
 
         if linear_vel ==0.0 and current_vel <0.1:
-            throttle = 0
+            throttle = 0.0
             brake = self.tor_limit #  NM this is mim torque required for Carla Car at idle
 
-        elif throttle <0.1 and vel_error <0:
-            throttle = 0
+        elif throttle <0.1 and vel_error <0.0:
+            throttle = 0.0
             decel = max (vel_error , self.decel_limit)
             brake  = abs(decel)* self.vehicle_mass * self.wheel_radius
 

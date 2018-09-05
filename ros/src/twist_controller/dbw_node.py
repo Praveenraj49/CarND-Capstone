@@ -77,33 +77,36 @@ class DBWNode(object):
 
         # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/twist_cmd' , TwistStamped , self.twist_cb)
-        rospy.Subscriber('/vehicle/dbw_enabled', Bool , self.vel_cb)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool , self.dbw_enabled_cb)
         rospy.Subscriber('/current_velocity' , TwistStamped, self.vel_cb)
 
-        self.dbw_enabled = False
+        self.dbw_enabled = None
         self.proposed_vel =0.0
         self.proposed_angular_vel = 0.0
         self.current_vel = 0.0
+
+        self.throttle = self.steering = self.brake =0
 
         self.loop()
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
-            # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
 
-             if self.dbw_enabled:
 
-                 throttle, brake, steering = self.controller.control(self.current_vel,
+            # TODO: Get predicted throttle, brake, and steering using `twist_controller`
+            self.throttle, self.brake, self.steering = self.controller.control(self.current_vel,
                                                                     self.dbw_enabled,
                                                                     self.proposed_vel,
                                                                     self.proposed_angular_vel)
-                 self.publish(throttle, brake, steering)
+            if self.dbw_enabled:
+                self.publish(self.throttle, self.brake, self.steering)
 
-             rate.sleep()
+            rate.sleep()
 
     def publish(self, throttle, brake, steer):
+        rospy.loginfo("Publishing Throttle : {0} , Brake  : {1} , Steering : {2}".format(throttle, brake , steer))
         tcmd = ThrottleCmd()
         tcmd.enable = True
         tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
@@ -128,7 +131,7 @@ class DBWNode(object):
 
 
     def dbw_enabled_cb(self, msg):
-        self.dbw_eanbled = msg.data
+        self.dbw_enabled = msg
 
     def vel_cb(self , msg):
         self.current_vel = msg.twist.linear.x
