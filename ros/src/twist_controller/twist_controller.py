@@ -14,15 +14,14 @@ ONE_MPH = 0.44704
 class Controller(object):
     def __init__(self, vehicle_mass, fuel_capacity,wheel_base , wheel_radius, steer_ratio , min_speed , max_lat_accel,max_steer_angle,
                  decel_limit ,accel_limit, throttle_limit, tor_limit ):
-        # TODO: Implement
         self.yaw_controller  = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel,max_steer_angle)
         self.tau = 0.5
         self.ts = 0.02
 
         self.vel_lpf = LowPassFilter(self.tau, self.ts)
-        self.kp = 0.2
+        self.kp = 0.3
         self.ki = 0.1
-        self.kd  = 0.01
+        self.kd  = 0.022
         self.min  = 0.0
         self.max = 0.2
         self.vehicle_mass = vehicle_mass + GAS_DENSITY*fuel_capacity
@@ -38,7 +37,6 @@ class Controller(object):
         self.last_time  = rospy.get_time()
 
     def control(self, current_vel , dbw_enabled , linear_vel , angular_vel):
-        # TODO: Change the arg, kwarg list to suit your needs
         # Return throttle, brake, steer
         if not dbw_enabled:
             self.throttle_controller.reset()
@@ -49,6 +47,7 @@ class Controller(object):
         steering  = self.yaw_controller.get_steering(linear_vel , angular_vel , current_vel)
 
         vel_error  = linear_vel - current_vel
+        #self.last_vel = current_vel
 
         current_time  = rospy.get_time()
         sample_time  = current_time  - self.last_time
